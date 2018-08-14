@@ -4,10 +4,15 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.deer</groupId>
+    <parent>
+        <groupId>org.deer</groupId>
+        <artifactId>mma-stats-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+        <relativePath>/mma-stats-parent</relativePath>
+    </parent>
+
     <artifactId>mma-stats</artifactId>
     <packaging>pom</packaging>
-    <version>1.0-SNAPSHOT</version>
 
     <modules>
         <module>mma-stats-app</module>

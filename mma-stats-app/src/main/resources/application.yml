@@ -1,6 +1,0 @@
-neo:
-  db:
-    file:
-      path: data/mma/db
-server:
-  port: 8444
