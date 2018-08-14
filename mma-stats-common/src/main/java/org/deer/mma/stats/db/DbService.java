@@ -4,5 +4,5 @@ import org.neo4j.graphdb.Transaction;
 
 public interface DbService extends AutoCloseable {
 
-    Transaction newTransaction();
+  Transaction newTransaction();
 }
