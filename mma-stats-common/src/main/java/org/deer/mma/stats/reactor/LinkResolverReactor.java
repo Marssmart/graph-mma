@@ -2,13 +2,15 @@ package org.deer.mma.stats.reactor;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import javax.annotation.Nonnull;
 
 public interface LinkResolverReactor {
 
   /**
    * Extract links of fighters not already existing in database
    */
-  CompletableFuture<DiscoverySessionInfo> extractNewFighters();
+  CompletableFuture<DiscoverySessionInfo> extractNewFighters(
+      @Nonnull final String startingPointLink);
 
   final class DiscoverySessionInfo {
 

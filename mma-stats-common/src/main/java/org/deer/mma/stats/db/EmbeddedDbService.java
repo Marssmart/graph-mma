@@ -1,34 +1,55 @@
 package org.deer.mma.stats.db;
 
-import java.io.File;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import javax.annotation.Nonnull;
+import org.deer.mma.stats.db.nodes.Fighter;
+import org.deer.mma.stats.db.nodes.NodeLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.graphdb.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Service;
 
 @Service
 @Scope("singleton")
-public class EmbeddedDbService implements DbService {
+public class EmbeddedDbService implements AutoCloseable, NeoTransactional {
 
   private static final Logger LOG = LoggerFactory.getLogger(EmbeddedDbService.class);
 
+  @Autowired
   private GraphDatabaseService graphDatabaseService;
 
-  EmbeddedDbService(@Value("${neo.db.file.path}") String neoDbFilePath) {
-    graphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(neoDbFilePath));
+  public Node createFighterNode(@Nonnull final String fullname) {
+    return doInTxAndReturnOptional(
+        () -> Fighter.addMandatoryAttributes(graphDatabaseService.createNode(), fullname))
+        .orElseThrow();
   }
 
-  public Transaction newTransaction() {
-    return graphDatabaseService.beginTx();
+  public Optional<Node> findFighterNode(@Nonnull final String fullname) {
+    return doInTxAndReturnOptional(() -> graphDatabaseService
+        .findNode(NodeLabel.FIGHTER.getLabel(), Fighter.FULLNAME, fullname));
+  }
+
+  public List<Node> findAllFighterNodes() {
+    return doInTxAndReturnOptional(
+        () -> graphDatabaseService.findNodes(NodeLabel.FIGHTER.getLabel()).stream().collect(
+            Collectors.toList()))
+        .orElse(Collections.emptyList());
   }
 
   @Override
   public void close() {
     LOG.info("Closing DB service");
     graphDatabaseService.shutdown();
+  }
+
+  @Override
+  public GraphDatabaseService getDbService() {
+    return graphDatabaseService;
   }
 }

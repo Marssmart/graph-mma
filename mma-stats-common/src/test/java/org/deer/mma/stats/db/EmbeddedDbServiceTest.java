@@ -1,29 +1,62 @@
 package org.deer.mma.stats.db;
 
-import java.io.File;
-import org.junit.After;
-import org.junit.Before;
+import static org.hamcrest.core.IsCollectionContaining.hasItems;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+
+import java.util.Iterator;
+import java.util.List;
+import org.deer.mma.stats.db.nodes.Fighter;
+import org.deer.mma.stats.db.nodes.NodeLabel;
 import org.junit.Test;
-import org.springframework.util.FileSystemUtils;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
 
-public class EmbeddedDbServiceTest {
+public class EmbeddedDbServiceTest extends NeoDbTest {
 
-  private static final String DB_PATH = "test/data";
-  private EmbeddedDbService dbService;
-
-  @Before
-  public void init() {
-    dbService = new EmbeddedDbService(DB_PATH);
+  @Test
+  public void createFighterNode() {
+    Node denisRodman = dbService.createFighterNode("Sage Northcut");
+    dbService.doInTx(() -> {
+      Node denisRodmanFromDb = dbService.getDbService()
+          .findNode(NodeLabel.FIGHTER.getLabel(), Fighter.FULLNAME, "Sage Northcut");
+      verifyFighterNode(denisRodman, "Sage Northcut");
+      verifyFighterNode(denisRodmanFromDb, "Sage Northcut");
+    });
   }
 
   @Test
-  public void testNewTx() {
-    dbService.newTransaction().close();
+  public void findFighterNode() {
+    dbService.doInTx(() -> {
+      Node connorMcGregor = Fighter
+          .addMandatoryAttributes(dbService.getDbService().createNode(), "Connor McGregor");
+
+      Node foundConnorMcgregor = dbService.findFighterNode("Connor McGregor").get();
+      assertEquals(connorMcGregor, foundConnorMcgregor);
+      verifyFighterNode(connorMcGregor, "Connor McGregor");
+    });
   }
 
-  @After
-  public void cleanup() {
-    dbService.close();
-    FileSystemUtils.deleteRecursively(new File(DB_PATH));
+  @Test
+  public void findAllFighters() {
+    dbService.doInTx(() -> {
+      Node connorMcGregor = Fighter
+          .addMandatoryAttributes(dbService.getDbService().createNode(), "Connor McGregor");
+      Node chadMendes = Fighter
+          .addMandatoryAttributes(dbService.getDbService().createNode(), "Chad Mendes");
+      Node maxHolloway = Fighter
+          .addMandatoryAttributes(dbService.getDbService().createNode(), "Max Holloway");
+
+      List<Node> allFighters = dbService.findAllFighterNodes();
+      assertThat(allFighters, hasItems(connorMcGregor, chadMendes, maxHolloway));
+    });
+  }
+
+  private void verifyFighterNode(Node fighter, String fullName) {
+    Iterator<Label> labelsIterator = fighter.getLabels().iterator();
+    assertEquals(NodeLabel.FIGHTER.getLabel(), labelsIterator.next());
+    assertFalse(labelsIterator.hasNext());
+    assertEquals(fighter.getProperty(Fighter.FULLNAME), fullName);
   }
 }
