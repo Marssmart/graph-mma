@@ -18,22 +18,14 @@ public class FighterLinkScrapingScenarioRunner {
   private static final Logger LOG = LoggerFactory
       .getLogger(FighterLinkScrapingScenarioRunner.class);
 
-  private static final String[] START_LINKS = {
-      "\"http://www.fightmatrix.com/fighter-profile/Gegard+Mousasi/13436/\"",
-      "\"http://www.fightmatrix.com/fighter-profile/Georges+St.+Pierre/9489/\"",
-      "\"http://www.fightmatrix.com/fighter-profile/Anderson+Silva/1342/\"",
-      "\"http://www.fightmatrix.com/fighter-profile/Jose+Aldo/23446/\"",
-      "\"http://www.fightmatrix.com/fighter-profile/Jon+Jones/8116/\""
-  };
-
   private static Timer timer = new Timer();
 
   public static void main(String[] args) throws IOException, InterruptedException {
     LOG.info("Starting scraping client");
     final OkHttpClient client = new OkHttpClient();
 
-    LOG.info("Sending scraping request for links {}", Arrays.toString(START_LINKS));
-    triggerScraping(client);
+    LOG.info("Sending scraping request for links {}", Arrays.toString(args));
+    triggerScraping(client,args);
 
     Request checkRequest = createCheckScrapingRequest();
     boolean isRunning = true;
@@ -61,8 +53,8 @@ public class FighterLinkScrapingScenarioRunner {
     LOG.info("Scraping finished");
   }
 
-  private static void triggerScraping(OkHttpClient client) throws IOException {
-    final Response triggerResponse = client.newCall(createScrapingRequest(START_LINKS)).execute();
+  private static void triggerScraping(OkHttpClient client, String[] links) throws IOException {
+    final Response triggerResponse = client.newCall(createScrapingRequest(links)).execute();
 
     if (!triggerResponse.isSuccessful()) {
       LOG.error("Scraping request failed : {}", triggerResponse);
