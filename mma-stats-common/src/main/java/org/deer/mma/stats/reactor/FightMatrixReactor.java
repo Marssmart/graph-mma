@@ -1,10 +1,8 @@
 package org.deer.mma.stats.reactor;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.Streams;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -14,7 +12,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.db.repository.FighterRepo;
@@ -103,7 +100,7 @@ public class FightMatrixReactor implements LinkResolverReactor {
 
       //little trick so i don't have to use recursion
       final ListIterator<String> growingIterator = discoveredLinks.listIterator();
-      while (growingIterator.hasNext() && discoveredLinks.size() < limit) {
+      while (growingIterator.hasNext() && limitCounter.get() > 0) {
         //collect links withing next link in line and than add them at the end of iterator
         String nextLink = growingIterator.next();
         collectLinksWithinPage(nextLink)
@@ -118,14 +115,13 @@ public class FightMatrixReactor implements LinkResolverReactor {
 
                 if (limitCounter.getAndDecrement() > 0) {
                   discoveredLinksIndexPerFighterName.put(parsedName.get(), link);
+                  growingIterator.add(link);
+                  //ListIterator#add shifts the nextIndex so it does match the element
+                  //that should be returned next, by calling ListIterator#previous,
+                  //we can omit skipping the processing of newly added elements,therefore
+                  //this method can replace the reflection calling here and also can be debugged easily
+                  growingIterator.previous();
                 }
-
-                growingIterator.add(link);
-                //ListIterator#add shifts the nextIndex so it does match the element
-                //that should be returned next, by calling ListIterator#previous,
-                //we can omit skipping the processing of newly added elements,therefore
-                //this method can replace the reflection calling here and also can be debugged easily
-                growingIterator.previous();
               }
             });
       }
