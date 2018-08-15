@@ -48,8 +48,7 @@ public class FighterLinkScrapingScenarioRunner {
         System.exit(-1);
       }
     }
-    LOG.info("Scraping finished, sending shutdown request");
-    System.exit(0);
+    LOG.info("Scraping finished");
   }
 
   private static void triggerScraping(OkHttpClient client) throws IOException {
