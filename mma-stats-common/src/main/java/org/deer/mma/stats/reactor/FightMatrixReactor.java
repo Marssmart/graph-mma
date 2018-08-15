@@ -79,6 +79,7 @@ public class FightMatrixReactor implements LinkResolverReactor {
   @Override
   public CompletableFuture<DiscoverySession> extractNewFighters(
       @Nonnull final String startingPointLink) {
+    LOG.info("Starting new fighters extraction for {}, limit {}", startingPointLink, limit);
     return CompletableFuture.supplyAsync(() -> {
       final Set<String> existingFighterNames = fighterRepo.getAllFighterNames();
 
