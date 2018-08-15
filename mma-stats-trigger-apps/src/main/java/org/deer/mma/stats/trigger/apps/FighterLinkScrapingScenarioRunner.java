@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -22,8 +23,8 @@ public class FighterLinkScrapingScenarioRunner {
 
   public static void main(String[] args) throws IOException, InterruptedException {
     LOG.info("Starting scraping client");
-    if(args.length != 1){
-      LOG.info("Illegal arguments detected : {}",Arrays.toString(args));
+    if (args.length != 1) {
+      LOG.info("Illegal arguments detected : {}", Arrays.toString(args));
       System.exit(-1);
     }
     final OkHttpClient client = new OkHttpClient();
@@ -42,7 +43,7 @@ public class FighterLinkScrapingScenarioRunner {
     }));
 
     LOG.info("Sending scraping request for links {}", args[0]);
-    triggerScraping(client,args[0]);
+    triggerScraping(client, args[0]);
 
     Request checkRequest = createCheckScrapingRequest();
     boolean isRunning = true;
@@ -65,7 +66,18 @@ public class FighterLinkScrapingScenarioRunner {
   }
 
   private static void triggerScraping(OkHttpClient client, String links) throws IOException {
-    final Response triggerResponse = client.newCall(createScrapingRequest(links)).execute();
+
+    String escapedPayload = "["
+        + Arrays.stream(links.split(","))
+        .map(String::trim)
+        .map(link -> "\"" + link + "\"")
+        .collect(Collectors.joining(","))
+        + "]";
+
+    LOG.info("Escaped payload {}", escapedPayload);
+
+    final Response triggerResponse = client.newCall(createScrapingRequest(escapedPayload))
+        .execute();
 
     if (!triggerResponse.isSuccessful()) {
       LOG.error("Scraping request failed : {}", triggerResponse);
