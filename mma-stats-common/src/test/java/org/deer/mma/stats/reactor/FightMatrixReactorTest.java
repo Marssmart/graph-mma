@@ -31,7 +31,7 @@ public class FightMatrixReactorTest extends NeoDbTest {
 
   @Test(timeout = 20000)
   public void resolveLinksSomeExisting() {
-    dbService.createFighterNode("Uriah Hall");
+    dbService.createFighterNodeTransactional("Uriah Hall");
 
     DiscoverySessionInfo sessionInfo = reactor
         .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")

@@ -41,38 +41,6 @@ public class FightMatrixReactor implements LinkResolverReactor {
   @Autowired
   private EmbeddedDbService dbService;
 
-  static Set<String> parseFighterLinks(String content) {
-    return Splitter.on(HREF_FIGHTER_PROFILE_MASK)
-        .splitToList(content)
-        .stream()
-        .skip(1)
-        .map(s -> s.substring(0, s.indexOf("'")))
-        .map(s -> HREF_PROFILE_BASE + s)
-        .map(String::trim)
-        .collect(Collectors.toSet());
-  }
-
-  //http://www.fightmatrix.com/fighter-profile/Gegard+Mousasi/13436/
-  static Optional<String> parseFullName(String link) {
-    int hrefStart = link.indexOf(FIGHTER_PROFILE_LINK_BASE);
-
-    if (hrefStart == -1) {
-      LOG.warn("{} not found in link {}", link, FIGHTER_PROFILE_LINK_BASE);
-      return Optional.empty();
-    }
-
-    int slashAfterNameStart = link.indexOf('/', hrefStart + FIGHTER_PROFILE_LINK_BASE.length());
-
-    if (slashAfterNameStart == -1) {
-      LOG.warn("Slash not found in link {} after fighter name", link, FIGHTER_PROFILE_LINK_BASE);
-      return Optional.empty();
-    }
-
-    return Optional.of(
-        link.substring(hrefStart + FIGHTER_PROFILE_LINK_BASE.length(), slashAfterNameStart)
-            .replace("+", " "));
-  }
-
   @Override
   public CompletableFuture<DiscoverySessionInfo> extractNewFighters(
       @Nonnull final String startingPointLink) {
@@ -139,5 +107,37 @@ public class FightMatrixReactor implements LinkResolverReactor {
         .thenApply(content -> content.isPresent() ?
             parseFighterLinks(content.get()) :
             Collections.emptySet());
+  }
+
+  public static Set<String> parseFighterLinks(String content) {
+    return Splitter.on(HREF_FIGHTER_PROFILE_MASK)
+        .splitToList(content)
+        .stream()
+        .skip(1)
+        .map(s -> s.substring(0, s.indexOf("'")))
+        .map(s -> HREF_PROFILE_BASE + s)
+        .map(String::trim)
+        .collect(Collectors.toSet());
+  }
+
+  //http://www.fightmatrix.com/fighter-profile/Gegard+Mousasi/13436/
+  public static Optional<String> parseFullName(String link) {
+    int hrefStart = link.indexOf(FIGHTER_PROFILE_LINK_BASE);
+
+    if (hrefStart == -1) {
+      LOG.warn("{} not found in link {}", link, FIGHTER_PROFILE_LINK_BASE);
+      return Optional.empty();
+    }
+
+    int slashAfterNameStart = link.indexOf('/', hrefStart + FIGHTER_PROFILE_LINK_BASE.length());
+
+    if (slashAfterNameStart == -1) {
+      LOG.warn("Slash not found in link {} after fighter name", link, FIGHTER_PROFILE_LINK_BASE);
+      return Optional.empty();
+    }
+
+    return Optional.of(
+        link.substring(hrefStart + FIGHTER_PROFILE_LINK_BASE.length(), slashAfterNameStart)
+            .replace("+", " "));
   }
 }

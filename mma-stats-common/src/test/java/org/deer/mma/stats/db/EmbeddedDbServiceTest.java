@@ -17,7 +17,7 @@ public class EmbeddedDbServiceTest extends NeoDbTest {
 
   @Test
   public void createFighterNode() {
-    Node denisRodman = dbService.createFighterNode("Sage Northcut");
+    Node denisRodman = dbService.createFighterNodeTransactional("Sage Northcut").get();
     dbService.doInTx(() -> {
       Node denisRodmanFromDb = dbService.getDbService()
           .findNode(NodeLabel.FIGHTER.getLabel(), Fighter.FULLNAME, "Sage Northcut");

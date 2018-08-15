@@ -24,10 +24,13 @@ public class EmbeddedDbService implements AutoCloseable, NeoTransactional {
   @Autowired
   private GraphDatabaseService graphDatabaseService;
 
-  public Node createFighterNode(@Nonnull final String fullname) {
+  public Optional<Node> createFighterNodeTransactional(@Nonnull final String fullname) {
     return doInTxAndReturnOptional(
-        () -> Fighter.addMandatoryAttributes(graphDatabaseService.createNode(), fullname))
-        .orElseThrow();
+        () -> Fighter.addMandatoryAttributes(graphDatabaseService.createNode(), fullname));
+  }
+
+  public Node createFighterNode(@Nonnull final String fullname) {
+    return Fighter.addMandatoryAttributes(graphDatabaseService.createNode(), fullname);
   }
 
   public Optional<Node> findFighterNode(@Nonnull final String fullname) {
