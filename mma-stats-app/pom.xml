@@ -17,6 +17,7 @@
 
   <properties>
     <java.version>8</java.version>
+    <exec-maven-plugin.version>1.2.1</exec-maven-plugin.version>
   </properties>
 
   <dependencies>
@@ -39,6 +40,13 @@
       <artifactId>mma-stats-common</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <dependency>
+      <groupId>org.deer.mma.stats</groupId>
+      <artifactId>mma-stats-trigger-apps</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -46,6 +54,51 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>pre-integration-test</id>
+            <goals>
+              <goal>start</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>post-integration-test</id>
+            <goals>
+              <goal>stop</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>${exec-maven-plugin.version}</version>
+        <executions>
+          <execution>
+            <id>run-link-scrape</id>
+            <phase>integration-test</phase>
+            <goals>
+              <goal>java</goal>
+            </goals>
+            <configuration>
+              <mainClass>org.deer.mma.stats.trigger.apps.FighterLinkScrapingScenarioRunner
+              </mainClass>
+              <includeProjectDependencies>false</includeProjectDependencies>
+              <includePluginDependencies>true</includePluginDependencies>
+              <executableDependency>
+                <groupId>org.deer.mma.stats</groupId>
+                <artifactId>mma-stats-trigger-apps</artifactId>
+              </executableDependency>
+            </configuration>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.deer.mma.stats</groupId>
+            <artifactId>mma-stats-trigger-apps</artifactId>
+            <version>${project.version}</version>
+          </dependency>
+        </dependencies>
       </plugin>
     </plugins>
   </build>

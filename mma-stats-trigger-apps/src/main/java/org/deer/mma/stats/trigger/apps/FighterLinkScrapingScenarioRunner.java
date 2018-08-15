@@ -10,7 +10,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-import org.deer.mma.stats.app.AppRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,9 +27,6 @@ public class FighterLinkScrapingScenarioRunner {
   };
 
   public static void main(String[] args) throws IOException, InterruptedException {
-    LOG.info("Starting stats app");
-    AppRunner.main(args);
-
     LOG.info("Starting scraping client");
     final OkHttpClient client = new OkHttpClient();
 
