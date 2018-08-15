@@ -18,6 +18,7 @@
     <module>mma-stats-app</module>
     <module>mma-stats-parent</module>
     <module>mma-stats-common</module>
+    <module>mma-stats-trigger-apps</module>
   </modules>
 
 
