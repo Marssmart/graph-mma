@@ -1,28 +1,55 @@
 package org.deer.mma.stats.reactor;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import javax.annotation.Nonnull;
+import org.neo4j.graphdb.Node;
 
 public interface LinkResolverReactor {
 
   /**
    * Extract links of fighters not already existing in database
    */
-  CompletableFuture<DiscoverySessionInfo> extractNewFighters(
+  CompletableFuture<DiscoverySession> extractNewFighters(
       @Nonnull final String startingPointLink);
 
-  final class DiscoverySessionInfo {
+  void decorateFighterByLink(final Node fighter, final String link);
 
-    private final List<String> discoveredLinks;
+  final class DiscoverySession {
 
-    public DiscoverySessionInfo(List<String> discoveredLinks) {
+    private final String originalLink;
+    private final Map<String, String> discoveredLinksPerNameIndex;
+    private final BiConsumer<Node, String> linkApplier;
 
-      this.discoveredLinks = discoveredLinks;
+    public DiscoverySession(String originalLink,
+        Map<String, String> discoveredLinksPerNameIndex,
+        BiConsumer<Node, String> linkApplier) {
+      this.originalLink = originalLink;
+
+      this.discoveredLinksPerNameIndex = discoveredLinksPerNameIndex;
+      this.linkApplier = linkApplier;
     }
 
-    public List<String> getDiscoveredLinks() {
-      return discoveredLinks;
+    public BiConsumer<Node, String> getLinkApplier() {
+      return linkApplier;
+    }
+
+    public String getOriginalLink() {
+      return originalLink;
+    }
+
+    public Map<String, String> getDiscoveredLinksPerNameIndex() {
+      return discoveredLinksPerNameIndex;
+    }
+
+    @Override
+    public String toString() {
+      return "DiscoverySession(originalLink="
+          + originalLink
+          + ", indexSize="
+          + discoveredLinksPerNameIndex.size()
+          + ")";
     }
   }
 }

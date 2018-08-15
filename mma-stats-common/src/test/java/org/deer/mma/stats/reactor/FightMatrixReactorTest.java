@@ -8,11 +8,11 @@ import com.google.common.io.Resources;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
 import org.deer.mma.stats.db.NeoDbTest;
-import org.deer.mma.stats.reactor.LinkResolverReactor.DiscoverySessionInfo;
+import org.deer.mma.stats.reactor.LinkResolverReactor.DiscoverySession;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -23,20 +23,20 @@ public class FightMatrixReactorTest extends NeoDbTest {
 
   @Test(timeout = 20000)
   public void resolveLinksNoAllreadyExisting() {
-    DiscoverySessionInfo sessionInfo = reactor
+    DiscoverySession sessionInfo = reactor
         .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
         .join();
-    assertEquals(10, sessionInfo.getDiscoveredLinks().size());
+    assertEquals(10, sessionInfo.getDiscoveredLinksPerNameIndex().size());
   }
 
   @Test(timeout = 20000)
   public void resolveLinksSomeExisting() {
     dbService.createFighterNodeTransactional("Uriah Hall");
 
-    DiscoverySessionInfo sessionInfo = reactor
+    DiscoverySession sessionInfo = reactor
         .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
         .join();
-    List<String> discoveredLinks = sessionInfo.getDiscoveredLinks();
+    Collection<String> discoveredLinks = sessionInfo.getDiscoveredLinksPerNameIndex().values();
     assertEquals(10, discoveredLinks.size());
     assertFalse(discoveredLinks
         .contains("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/"));

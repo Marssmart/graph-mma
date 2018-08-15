@@ -2,17 +2,21 @@ package org.deer.mma.stats.reactor;
 
 import com.google.common.base.Splitter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import org.deer.mma.stats.db.EmbeddedDbService;
 import org.deer.mma.stats.db.nodes.Fighter;
 import org.deer.mma.stats.reactor.request.HtmlPageRequester;
+import org.neo4j.graphdb.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,74 +44,6 @@ public class FightMatrixReactor implements LinkResolverReactor {
 
   @Autowired
   private EmbeddedDbService dbService;
-
-  @Override
-  public CompletableFuture<DiscoverySessionInfo> extractNewFighters(
-      @Nonnull final String startingPointLink) {
-    return CompletableFuture.supplyAsync(() -> {
-
-      final Set<String> existingFighterNames = dbService.doInTxAndReturnOptional(() ->
-          dbService.findAllFighterNodes()
-              .stream()
-              .map(node -> node.getProperty(Fighter.FULLNAME))
-              .map(String.class::cast)
-              .collect(Collectors.toSet())).orElse(Collections.emptySet());
-
-      //links that are directly on starting point page
-      final List<String> discoveredLinks = collectLinksWithinPage(startingPointLink).join().stream()
-          .filter(link -> {
-            Optional<String> parsedLink = parseFullName(link);
-            if (!parsedLink.isPresent()) {
-              LOG.warn("Link not parseable {}", parsedLink);
-              return false;
-            }
-
-            return !existingFighterNames.contains(parsedLink.get());
-          }).collect(Collectors.toCollection(LinkedList::new));
-
-      //little trick so i don't have to use recursion
-      final ListIterator<String> growingIterator = discoveredLinks.listIterator();
-      while (growingIterator.hasNext() && discoveredLinks.size() < limit) {
-        //collect links withing next link in line and than add them at the end of iterator
-        String nextLink = growingIterator.next();
-        collectLinksWithinPage(nextLink)
-            .join()
-            .stream()
-            .filter(link -> !discoveredLinks.contains(link))//omit duplicates
-            .filter(link -> !link.equals(startingPointLink))//to prevent loops
-            .forEach(link -> {
-              Optional<String> parsedLink = parseFullName(link);
-              if (!parsedLink.isPresent()) {
-                LOG.warn("Link not parseable {}", parsedLink);
-                return;
-              }
-
-              if (existingFighterNames.contains(parsedLink.get())) {
-                //allready existing
-                return;
-              }
-
-              growingIterator.add(link);
-              //ListIterator#add shifts the nextIndex so it does match the element
-              //that should be returned next, by calling ListIterator#previous,
-              //we can omit skipping the processing of newly added elements,therefore
-              //this method can replace the reflection calling here and also can be debugged easily
-              growingIterator.previous();
-            });
-      }
-
-      return new DiscoverySessionInfo(discoveredLinks.stream()
-          .limit(limit)
-          .collect(Collectors.toList()));
-    });
-  }
-
-  private CompletableFuture<Set<String>> collectLinksWithinPage(final String link) {
-    return basicHttpRequester.requestLink(link)
-        .thenApply(content -> content.isPresent() ?
-            parseFighterLinks(content.get()) :
-            Collections.emptySet());
-  }
 
   public static Set<String> parseFighterLinks(String content) {
     return Splitter.on(HREF_FIGHTER_PROFILE_MASK)
@@ -139,5 +75,79 @@ public class FightMatrixReactor implements LinkResolverReactor {
     return Optional.of(
         link.substring(hrefStart + FIGHTER_PROFILE_LINK_BASE.length(), slashAfterNameStart)
             .replace("+", " "));
+  }
+
+  @Override
+  public CompletableFuture<DiscoverySession> extractNewFighters(
+      @Nonnull final String startingPointLink) {
+    return CompletableFuture.supplyAsync(() -> {
+
+      final Set<String> existingFighterNames = dbService.doInTxAndReturnOptional(() ->
+          dbService.findAllFighterNodes()
+              .stream()
+              .map(node -> node.getProperty(Fighter.FULLNAME))
+              .map(String.class::cast)
+              .collect(Collectors.toSet())).orElse(Collections.emptySet());
+
+      final AtomicInteger limitCounter = new AtomicInteger(limit);
+
+      //links that are directly on starting point page
+      final Map<String, String> discoveredLinksIndexPerFighterName = new HashMap<>();
+      final List<String> discoveredLinks = collectLinksWithinPage(startingPointLink).join().stream()
+          .filter(link -> {
+            Optional<String> parsedName = parseFullName(link);
+            if (parsedName.isPresent() && !existingFighterNames.contains(parsedName.get())) {
+              if (limitCounter.getAndDecrement() > 0) {
+                discoveredLinksIndexPerFighterName.put(parsedName.get(), link);
+              }
+              return true;
+            }
+            return false;
+          }).collect(Collectors.toCollection(LinkedList::new));
+
+      //little trick so i don't have to use recursion
+      final ListIterator<String> growingIterator = discoveredLinks.listIterator();
+      while (growingIterator.hasNext() && discoveredLinks.size() < limit) {
+        //collect links withing next link in line and than add them at the end of iterator
+        String nextLink = growingIterator.next();
+        collectLinksWithinPage(nextLink)
+            .join()
+            .stream()
+            .filter(link -> !discoveredLinks.contains(link))//omit duplicates
+            .filter(link -> !link.equals(startingPointLink))//to prevent loops
+            .forEach(link -> {
+              final Optional<String> parsedName = parseFullName(link);
+
+              if (parsedName.isPresent() && !existingFighterNames.contains(parsedName.get())) {
+
+                if (limitCounter.getAndDecrement() > 0) {
+                  discoveredLinksIndexPerFighterName.put(parsedName.get(), link);
+                }
+
+                growingIterator.add(link);
+                //ListIterator#add shifts the nextIndex so it does match the element
+                //that should be returned next, by calling ListIterator#previous,
+                //we can omit skipping the processing of newly added elements,therefore
+                //this method can replace the reflection calling here and also can be debugged easily
+                growingIterator.previous();
+              }
+            });
+      }
+
+      return new DiscoverySession(startingPointLink, discoveredLinksIndexPerFighterName,
+          this::decorateFighterByLink);
+    });
+  }
+
+  @Override
+  public void decorateFighterByLink(Node fighter, String link) {
+    fighter.setProperty(Fighter.FIGHT_MATRIX_LINK, link);
+  }
+
+  private CompletableFuture<Set<String>> collectLinksWithinPage(final String link) {
+    return basicHttpRequester.requestLink(link)
+        .thenApply(content -> content.isPresent() ?
+            parseFighterLinks(content.get()) :
+            Collections.emptySet());
   }
 }
