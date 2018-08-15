@@ -1,28 +1,25 @@
 package org.deer.mma.stats;
 
-import java.io.File;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
+import org.deer.mma.stats.db.DbConfig;
+import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.ComponentScan.Filter;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.util.FileSystemUtils;
 
 @Configuration
 @PropertySource("classpath:application-test.properties")
 @ComponentScan(basePackages = {
     "org.deer.mma.stats.db",
     "org.deer.mma.stats.reactor"
-})
+}, excludeFilters = @Filter(type = FilterType.ASSIGNABLE_TYPE,value = DbConfig.class))
 public class TestConfig {
 
-  @Bean
-  @Qualifier("test-db-remover")
-  public AutoCloseable testRunCleanup(@Value("${neo.db.file.path}") String neoDbFilePath) {
-    Runtime.getRuntime().addShutdownHook(
-        new Thread(() -> FileSystemUtils.deleteRecursively(new File(neoDbFilePath))));
-    return () -> {
-    };
+  @Bean(destroyMethod = "shutdown")
+  public GraphDatabaseService testDb() {
+    return new TestGraphDatabaseFactory().newImpermanentDatabase();
   }
 }

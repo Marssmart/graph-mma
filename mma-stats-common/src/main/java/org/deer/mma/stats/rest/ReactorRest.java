@@ -29,6 +29,7 @@ public class ReactorRest {
 
   private static final Logger LOG = LoggerFactory.getLogger(ReactorRest.class);
   private final AtomicBoolean scrapingLock = new AtomicBoolean(false);
+
   @Autowired
   @Qualifier("fight-matrix-reactor")
   private LinkResolverReactor fightMatrixReactor;

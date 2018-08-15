@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 @Scope("singleton")
-public class EmbeddedDbService implements AutoCloseable, NeoTransactional {
+public class EmbeddedDbService implements NeoTransactional {
 
   private static final Logger LOG = LoggerFactory.getLogger(EmbeddedDbService.class);
 
@@ -43,12 +43,6 @@ public class EmbeddedDbService implements AutoCloseable, NeoTransactional {
         () -> graphDatabaseService.findNodes(NodeLabel.FIGHTER.getLabel()).stream().collect(
             Collectors.toList()))
         .orElse(Collections.emptyList());
-  }
-
-  @Override
-  public void close() {
-    LOG.info("Closing DB service");
-    graphDatabaseService.shutdown();
   }
 
   @Override

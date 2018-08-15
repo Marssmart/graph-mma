@@ -14,6 +14,7 @@ public interface NeoTransactional {
         transaction.success();
       } catch (Exception e) {
         transaction.failure();
+        throw new IllegalStateException(e);
       }
     }
   }
@@ -26,7 +27,7 @@ public interface NeoTransactional {
         return Optional.ofNullable(value);
       } catch (Exception e) {
         transaction.failure();
-        return Optional.empty();
+        throw new IllegalStateException(e);
       }
     }
   }
