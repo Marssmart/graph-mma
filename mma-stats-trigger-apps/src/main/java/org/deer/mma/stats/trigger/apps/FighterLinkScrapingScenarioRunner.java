@@ -28,19 +28,6 @@ public class FighterLinkScrapingScenarioRunner {
       System.exit(-1);
     }
     final OkHttpClient client = new OkHttpClient();
-    Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-      timer.cancel();
-      timer.purge();
-      client.dispatcher().executorService().shutdownNow();
-      client.connectionPool().evictAll();
-      if (client.cache() != null) {
-        try {
-          client.cache().close();
-        } catch (IOException e) {
-          throw new IllegalStateException(e);
-        }
-      }
-    }));
 
     LOG.info("Sending scraping request for links {}", args[0]);
     triggerScraping(client, args[0]);
@@ -62,6 +49,13 @@ public class FighterLinkScrapingScenarioRunner {
       }
     }
 
+    timer.cancel();
+    timer.purge();
+    client.dispatcher().executorService().shutdownNow();
+    client.connectionPool().evictAll();
+    if (client.cache() != null) {
+      client.cache().close();
+    }
     LOG.info("Scraping finished");
   }
 
