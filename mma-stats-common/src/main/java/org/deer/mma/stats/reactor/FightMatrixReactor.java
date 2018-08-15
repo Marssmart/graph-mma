@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
 import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.db.repository.FighterRepo;
@@ -87,7 +88,10 @@ public class FightMatrixReactor implements LinkResolverReactor {
 
       //links that are directly on starting point page
       final Map<String, String> discoveredLinksIndexPerFighterName = new HashMap<>();
-      final List<String> discoveredLinks = collectLinksWithinPage(startingPointLink).join().stream()
+
+      final List<String> discoveredLinks = Stream.concat(
+          collectLinksWithinPage(startingPointLink).join().stream(),
+          Stream.of(startingPointLink))
           .filter(link -> {
             Optional<String> parsedName = parseFullName(link);
             if (parsedName.isPresent() && !existingFighterNames.contains(parsedName.get())) {
