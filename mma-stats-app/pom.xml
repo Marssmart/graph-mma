@@ -89,11 +89,7 @@
               <mainClass>org.deer.mma.stats.trigger.apps.FighterLinkScrapingScenarioRunner
               </mainClass>
              <arguments>
-               <argument>${env.mma.stats.scrape.start.link.one}</argument>
-               <argument>${env.mma.stats.scrape.start.link.two}</argument>
-               <argument>${env.mma.stats.scrape.start.link.three}</argument>
-               <argument>${env.mma.stats.scrape.start.link.four}</argument>
-               <argument>${env.mma.stats.scrape.start.link.five}</argument>
+               <argument>${env.MMA_STATS_SCRAPE_LINKS}</argument>
              </arguments>
               <includeProjectDependencies>false</includeProjectDependencies>
               <includePluginDependencies>true</includePluginDependencies>
