@@ -11,15 +11,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
-import org.deer.mma.stats.db.NeoDbTest;
+import org.deer.mma.stats.db.node.Fighter;
+import org.deer.mma.stats.db.repository.FighterRepo;
+import org.deer.mma.stats.db.repository.RepositoryTest;
 import org.deer.mma.stats.reactor.LinkResolverReactor.DiscoverySession;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-public class FightMatrixReactorTest extends NeoDbTest {
+public class FightMatrixReactorTest extends RepositoryTest {
 
   @Autowired
   private FightMatrixReactor reactor;
+
+  @Autowired
+  private FighterRepo fighterRepo;
 
   @Test(timeout = 20000)
   public void resolveLinksNoAllreadyExisting() {
@@ -31,7 +37,7 @@ public class FightMatrixReactorTest extends NeoDbTest {
 
   @Test(timeout = 20000)
   public void resolveLinksSomeExisting() {
-    dbService.createFighterNodeTransactional("Uriah Hall");
+    fighterRepo.save(new Fighter().setFullname("Uriah Hall"));
 
     DiscoverySession sessionInfo = reactor
         .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")

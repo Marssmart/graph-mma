@@ -1,23 +1,24 @@
 package org.deer.mma.stats.db;
 
-import java.io.File;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.logging.slf4j.Slf4jLogProvider;
-import org.springframework.beans.factory.annotation.Value;
+import org.neo4j.ogm.session.SessionFactory;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.neo4j.repository.config.EnableNeo4jRepositories;
+import org.springframework.data.neo4j.transaction.Neo4jTransactionManager;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 @Configuration
-@ComponentScan("org.deer.mma.stats.db")
+@EnableTransactionManagement
+@EnableNeo4jRepositories("org.deer.mma.stats.db.repository")
 public class DbConfig {
 
-  @Bean(destroyMethod = "shutdown")
-  public GraphDatabaseService graphDbService(@Value("${neo.db.file.path}") String neoDbFilePath) {
-    return new GraphDatabaseFactory()
-        .setUserLogProvider(new Slf4jLogProvider())
-        .newEmbeddedDatabaseBuilder(new File(neoDbFilePath))
-        .newGraphDatabase();
+  @Bean
+  public SessionFactory sessionFactory(final org.neo4j.ogm.config.Configuration configuration) {
+    return new SessionFactory(configuration, "org.deer.mma.stats.db.node");
+  }
+
+  @Bean
+  public Neo4jTransactionManager transactionManager(final SessionFactory sessionFactory) {
+    return new Neo4jTransactionManager(sessionFactory);
   }
 }

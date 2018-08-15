@@ -1,8 +1,10 @@
 package org.deer.mma.stats.reactor;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.Streams;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -12,11 +14,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.annotation.Nonnull;
-import org.deer.mma.stats.db.EmbeddedDbService;
-import org.deer.mma.stats.db.nodes.Fighter;
+import org.deer.mma.stats.db.node.Fighter;
+import org.deer.mma.stats.db.repository.FighterRepo;
 import org.deer.mma.stats.reactor.request.HtmlPageRequester;
-import org.neo4j.graphdb.Node;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +45,7 @@ public class FightMatrixReactor implements LinkResolverReactor {
   private HtmlPageRequester basicHttpRequester;
 
   @Autowired
-  private EmbeddedDbService dbService;
+  private FighterRepo fighterRepo;
 
   public static Set<String> parseFighterLinks(String content) {
     return Splitter.on(HREF_FIGHTER_PROFILE_MASK)
@@ -81,13 +83,7 @@ public class FightMatrixReactor implements LinkResolverReactor {
   public CompletableFuture<DiscoverySession> extractNewFighters(
       @Nonnull final String startingPointLink) {
     return CompletableFuture.supplyAsync(() -> {
-
-      final Set<String> existingFighterNames = dbService.doInTxAndReturnOptional(() ->
-          dbService.findAllFighterNodes()
-              .stream()
-              .map(node -> node.getProperty(Fighter.FULLNAME))
-              .map(String.class::cast)
-              .collect(Collectors.toSet())).orElse(Collections.emptySet());
+      final Set<String> existingFighterNames = fighterRepo.getAllFighterNames();
 
       final AtomicInteger limitCounter = new AtomicInteger(limit);
 
@@ -140,8 +136,8 @@ public class FightMatrixReactor implements LinkResolverReactor {
   }
 
   @Override
-  public void decorateFighterByLink(Node fighter, String link) {
-    fighter.setProperty(Fighter.FIGHT_MATRIX_LINK, link);
+  public Fighter decorateFighterByLink(Fighter fighter, String link) {
+    return fighter.setFightMatrixLink(link);
   }
 
   private CompletableFuture<Set<String>> collectLinksWithinPage(final String link) {
