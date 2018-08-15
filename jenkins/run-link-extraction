@@ -1,0 +1,30 @@
+properties([parameters([text(defaultValue: '''http://www.fightmatrix.com/fighter-profile/Gegard+Mousasi/13436/,
+http://www.fightmatrix.com/fighter-profile/Georges+St.+Pierre/9489/,
+http://www.fightmatrix.com/fighter-profile/Anderson+Silva/1342/,
+http://www.fightmatrix.com/fighter-profile/Jose+Aldo/23446/,
+http://www.fightmatrix.com/fighter-profile/Jon+Jones/8116/,
+http://www.fightmatrix.com/fighter-profile/Matt+Mitrione/57672/''', description: '', name: 'LINKS')]), pipelineTriggers([])])
+
+pipeline {
+    agent 'any'
+    stages {
+        stage('checkout') {
+            steps {
+                dir('graph_mma'){
+                    git credentialsId: 'JSR_CRED', url: 'https://github.com/Marssmart/graph-mma'
+                }
+            }
+        }
+        stage('run integrations') {
+            steps {
+                dir('graph_mma'){
+                    withMaven(jdk: 'JDK 10', maven: 'Maven_354', options: [junitPublisher(healthScaleFactor: 0.0)]) {
+                       withEnv(['MMA_STATS_SCRAPE_LINKS=${LINKS}']) {
+                            sh 'mvn clean integration-test -e -DskipTests';
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
