@@ -26,6 +26,8 @@ public class FighterLinkScrapingScenarioRunner {
       "\"http://www.fightmatrix.com/fighter-profile/Jon+Jones/8116/\""
   };
 
+  private static Timer timer = new Timer();
+
   public static void main(String[] args) throws IOException, InterruptedException {
     LOG.info("Starting scraping client");
     final OkHttpClient client = new OkHttpClient();
@@ -39,14 +41,22 @@ public class FighterLinkScrapingScenarioRunner {
     while (isRunning) {
       LOG.info("Scraping running ...");
       TimeUnit.SECONDS.sleep(10);
-      final Response checkResponse = client.newCall(checkRequest).execute();
-      if (checkResponse.isSuccessful()) {
-        isRunning = Boolean.valueOf(checkResponse.body().string());
-      } else {
-        LOG.error("Scraping check request failed", checkResponse);
-        checkResponse.close();
-        System.exit(-1);
+      try (final Response checkResponse = client.newCall(checkRequest).execute()) {
+        if (checkResponse.isSuccessful()) {
+          isRunning = Boolean.valueOf(checkResponse.body().string());
+        } else {
+          LOG.error("Scraping check request failed", checkResponse);
+          checkResponse.close();
+          System.exit(-1);
+        }
       }
+    }
+    timer.cancel();
+    timer.purge();
+    client.dispatcher().executorService().shutdownNow();
+    client.connectionPool().evictAll();
+    if (client.cache() != null) {
+      client.cache().close();
     }
     LOG.info("Scraping finished");
   }
@@ -61,7 +71,7 @@ public class FighterLinkScrapingScenarioRunner {
     }
     triggerResponse.close();
 
-    new Timer().schedule(new TimerTask() {
+    timer.schedule(new TimerTask() {
       @Override
       public void run() {
         LOG.error("Scraping timed out, shutting down scenario");
