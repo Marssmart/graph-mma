@@ -4,20 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
-import org.deer.mma.stats.TestConfig;
-import org.deer.mma.stats.cfg.TestDbConfig;
 import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.db.repository.FighterRepo;
+import org.deer.mma.stats.db.repository.RepositoryTest;
 import org.deer.mma.stats.reactor.LinkResolverReactor.DiscoverySession;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {TestConfig.class, TestDbConfig.class})
-public class FightMatrixReactorTest {
+public class FightMatrixReactorTest extends RepositoryTest {
 
   @Autowired
   private FightMatrixReactor reactor;
