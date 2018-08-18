@@ -11,7 +11,7 @@ public interface LinkResolverReactor {
   /**
    * Extract links of fighters not already existing in database
    */
-  CompletableFuture<DiscoverySession> extractNewFighters(
+  CompletableFuture<DiscoverySession> extractFighterLinks(
       @Nonnull final String startingPointLink);
 
   Fighter decorateFighterByLink(final Fighter fighter, final String link);

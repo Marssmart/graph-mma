@@ -22,7 +22,7 @@ public class FightMatrixReactorTest extends RepositoryTest {
   @Test(timeout = 20000)
   public void resolveLinksNoAllreadyExisting() {
     DiscoverySession sessionInfo = reactor
-        .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
+        .extractFighterLinks("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
         .join();
     assertEquals(10, sessionInfo.getDiscoveredLinksPerNameIndex().size());
 
@@ -55,7 +55,7 @@ public class FightMatrixReactorTest extends RepositoryTest {
     fighterRepo.save(new Fighter().setFullname("Uriah Hall"));
 
     DiscoverySession sessionInfo = reactor
-        .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
+        .extractFighterLinks("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
         .join();
     Collection<String> discoveredLinks = sessionInfo.getDiscoveredLinksPerNameIndex().values();
     assertEquals(10, discoveredLinks.size());

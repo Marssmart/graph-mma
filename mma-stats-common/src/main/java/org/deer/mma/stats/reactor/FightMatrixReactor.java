@@ -43,7 +43,7 @@ public class FightMatrixReactor implements LinkResolverReactor {
   private HtmlPageRequester basicHttpRequester;
 
   @Override
-  public CompletableFuture<DiscoverySession> extractNewFighters(
+  public CompletableFuture<DiscoverySession> extractFighterLinks(
       @Nonnull final String startingPointLink) {
     LOG.info("Starting new fighters extraction for {}, limit {}", startingPointLink, limit);
     return CompletableFuture.supplyAsync(() -> {

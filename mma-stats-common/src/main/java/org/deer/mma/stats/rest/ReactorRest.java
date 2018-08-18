@@ -38,7 +38,7 @@ public class ReactorRest {
   @Autowired
   private FighterRepo fighterRepo;
 
-  @RequestMapping(value = "/trigger-scraping", method = POST, consumes = "application/json")
+  @RequestMapping(value = "/trigger-fight-matrix-link-scraping", method = POST, consumes = "application/json")
   public ResponseEntity<String> triggerFightMatrixScraping(@RequestBody List<String> links) {
     if (scrapingLock.get()) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Scraping already running !");
@@ -56,7 +56,7 @@ public class ReactorRest {
           return true;
         })
         .peek(link -> LOG.info("Trigerring scraping for link {}", link))
-        .map(link -> fightMatrixReactor.extractNewFighters(link))
+        .map(link -> fightMatrixReactor.extractFighterLinks(link))
         .toArray(CompletableFuture[]::new);
 
     //preparation for multiple

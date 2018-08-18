@@ -93,7 +93,7 @@ public class FighterLinkScrapingScenarioRunner {
     MediaType mediaType = MediaType.parse("application/json");
     RequestBody body = RequestBody.create(mediaType, links);
     return new Request.Builder()
-        .url("http://localhost:8445/api/reactor/trigger-scraping")
+        .url("http://localhost:8445/api/reactor/trigger-fight-matrix-link-scraping")
         .post(body)
         .addHeader("Content-Type", "application/json")
         .addHeader("Cache-Control", "no-cache")
