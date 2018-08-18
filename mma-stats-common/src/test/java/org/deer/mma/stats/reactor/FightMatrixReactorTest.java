@@ -1,24 +1,23 @@
 package org.deer.mma.stats.reactor;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.io.Resources;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.Optional;
-import java.util.Set;
+import org.deer.mma.stats.TestConfig;
+import org.deer.mma.stats.cfg.TestDbConfig;
 import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.db.repository.FighterRepo;
-import org.deer.mma.stats.db.repository.RepositoryTest;
 import org.deer.mma.stats.reactor.LinkResolverReactor.DiscoverySession;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-public class FightMatrixReactorTest extends RepositoryTest {
+@RunWith(SpringJUnit4ClassRunner.class)
+@ContextConfiguration(classes = {TestConfig.class, TestDbConfig.class})
+public class FightMatrixReactorTest {
 
   @Autowired
   private FightMatrixReactor reactor;
@@ -32,6 +31,29 @@ public class FightMatrixReactorTest extends RepositoryTest {
         .extractNewFighters("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/")
         .join();
     assertEquals(10, sessionInfo.getDiscoveredLinksPerNameIndex().size());
+
+    final Collection<String> values = sessionInfo.getDiscoveredLinksPerNameIndex().values();
+
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Paulo+Henrique+Costa/121995/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Demian+Maia/26541/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Marcio+Alexandre+Jr./93602/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Darren+Till/75162/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Yoel+Romero/61978/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Stephen+Thompson/60803/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Tyron+Woodley/41178/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Robert+Whittaker/45036/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Rory+MacDonald/25924/"));
   }
 
   @Test(timeout = 20000)
@@ -43,36 +65,28 @@ public class FightMatrixReactorTest extends RepositoryTest {
         .join();
     Collection<String> discoveredLinks = sessionInfo.getDiscoveredLinksPerNameIndex().values();
     assertEquals(10, discoveredLinks.size());
-    assertFalse(discoveredLinks
+
+    final Collection<String> values = sessionInfo.getDiscoveredLinksPerNameIndex().values();
+
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Paulo+Henrique+Costa/121995/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Demian+Maia/26541/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Marcio+Alexandre+Jr./93602/"));
+    assertTrue(values
         .contains("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/"));
-  }
-
-  @Test
-  public void parseFighterLinks() throws IOException {
-    URL resource = Resources.getResource("fight-matrix-example-payload.html");
-    String content = Resources.toString(resource, StandardCharsets.UTF_8);
-
-    Set<String> set = FightMatrixReactor.parseFighterLinks(content);
-
-    assertEquals(3, set.size());
-    assertTrue(
-        set.contains("http://www.fightmatrix.com/fighter-profile/Rory+MacDonald/25924/"));
-    assertTrue(set.contains("http://www.fightmatrix.com/fighter-profile/Uriah+Hall/26116/"));
-    assertTrue(
-        set.contains("http://www.fightmatrix.com/fighter-profile/Rafael+Carvalho/90597/"));
-  }
-
-  @Test
-  public void parseFighterName() {
-    Optional<String> rory = FightMatrixReactor
-        .parseFullName("http://www.fightmatrix.com/fighter-profile/Rory+MacDonald/25924/");
-    Optional<String> uriah = FightMatrixReactor
-        .parseFullName("http://www.fightmatrix.com/fighter-profile/Uriah/26116/");
-    Optional<String> rafael = FightMatrixReactor
-        .parseFullName("http://www.fightmatrix.com/fighter-profile/Rafael+Carvalho+Monina/90597/");
-
-    assertEquals("Rory MacDonald", rory.get());
-    assertEquals("Uriah", uriah.get());
-    assertEquals("Rafael Carvalho Monina", rafael.get());
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Darren+Till/75162/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Yoel+Romero/61978/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Stephen+Thompson/60803/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Tyron+Woodley/41178/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Robert+Whittaker/45036/"));
+    assertTrue(values
+        .contains("http://www.fightmatrix.com/fighter-profile/Rory+MacDonald/25924/"));
   }
 }

@@ -2,7 +2,6 @@ package org.deer.mma.stats.reactor;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import javax.annotation.Nonnull;
 import org.deer.mma.stats.db.node.Fighter;
@@ -20,13 +19,15 @@ public interface LinkResolverReactor {
   final class DiscoverySession {
 
     private final String originalLink;
+    private final String sherdogLink;
     private final Map<String, String> discoveredLinksPerNameIndex;
     private final BiFunction<Fighter, String,Fighter> linkApplier;
 
     public DiscoverySession(String originalLink,
-        Map<String, String> discoveredLinksPerNameIndex,
-        BiFunction<Fighter, String,Fighter> linkApplier) {
+        String sherdogLink, Map<String, String> discoveredLinksPerNameIndex,
+        BiFunction<Fighter, String, Fighter> linkApplier) {
       this.originalLink = originalLink;
+      this.sherdogLink = sherdogLink;
 
       this.discoveredLinksPerNameIndex = discoveredLinksPerNameIndex;
       this.linkApplier = linkApplier;

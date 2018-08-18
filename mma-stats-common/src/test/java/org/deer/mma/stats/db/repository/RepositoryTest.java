@@ -1,6 +1,7 @@
 package org.deer.mma.stats.db.repository;
 
 import org.deer.mma.stats.TestConfig;
+import org.deer.mma.stats.cfg.TestDbConfig;
 import org.junit.After;
 import org.junit.runner.RunWith;
 import org.neo4j.ogm.session.Session;
@@ -10,7 +11,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = TestConfig.class)
+@ContextConfiguration(classes = {TestConfig.class, TestDbConfig.class})
 public abstract class RepositoryTest {
 
   @Autowired
