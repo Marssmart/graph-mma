@@ -1,9 +1,12 @@
 package org.deer.mma.stats.db.node;
 
 
+import java.util.ArrayList;
+import java.util.List;
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.NodeEntity;
+import org.neo4j.ogm.annotation.Relationship;
 
 @NodeEntity
 public class Fighter {
@@ -15,6 +18,9 @@ public class Fighter {
   private String fullname;
 
   private String fightMatrixLink;
+
+  @Relationship(type = "FOUGHT_IN_FIGHT")
+  private List<Fight> fights = new ArrayList<>();
 
   public Long getId() {
     return id;

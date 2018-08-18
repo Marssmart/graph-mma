@@ -15,7 +15,6 @@ import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.db.repository.FighterRepo;
 import org.deer.mma.stats.db.repository.RepositoryTest;
 import org.deer.mma.stats.reactor.LinkResolverReactor.DiscoverySession;
-import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -50,7 +49,7 @@ public class FightMatrixReactorTest extends RepositoryTest {
 
   @Test
   public void parseFighterLinks() throws IOException {
-    URL resource = Resources.getResource("fight-matrix-example-payload");
+    URL resource = Resources.getResource("fight-matrix-example-payload.html");
     String content = Resources.toString(resource, StandardCharsets.UTF_8);
 
     Set<String> set = FightMatrixReactor.parseFighterLinks(content);
