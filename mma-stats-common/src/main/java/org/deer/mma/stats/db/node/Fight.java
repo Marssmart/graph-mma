@@ -3,99 +3,115 @@ package org.deer.mma.stats.db.node;
 
 import static org.neo4j.ogm.annotation.Relationship.INCOMING;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.Duration;
+import java.util.Objects;
+import org.deer.mma.stats.db.node.convertor.DurationConvertor;
 import org.deer.mma.stats.db.node.enumerated.FightEndType;
-import org.deer.mma.stats.db.node.relationship.FoughtInFight;
-import org.deer.mma.stats.db.node.relationship.HappenedAtEvent;
-import org.deer.mma.stats.db.node.relationship.RefereedFight;
 import org.neo4j.ogm.annotation.GeneratedValue;
 import org.neo4j.ogm.annotation.Id;
 import org.neo4j.ogm.annotation.NodeEntity;
 import org.neo4j.ogm.annotation.Relationship;
+import org.neo4j.ogm.annotation.typeconversion.Convert;
 
 @NodeEntity
 public class Fight {
 
+  private static final DurationConvertor INTERNAL_CONVERTER = new DurationConvertor();
+
   @Id
   @GeneratedValue
-  private long id;
+  private Long id;
 
-  @JsonIgnoreProperties("event")
-  @Relationship(type = "HAPPENED_AT_EVENT")
-  private HappenedAtEvent event;
-
-  @JsonIgnoreProperties("fight")
-  @Relationship(type = FoughtInFight.TYPE, direction = INCOMING)
-  private FoughtInFight blueFighter;
-
-  @JsonIgnoreProperties("fight")
-  @Relationship(type = FoughtInFight.TYPE, direction = INCOMING)
-  private FoughtInFight redFighter;
-
-  @JsonIgnoreProperties("referee")
-  @Relationship(type = RefereedFight.TYPE, direction = INCOMING)
-  private RefereedFight referee;
+  @Relationship(type = "REFEREED", direction = INCOMING)
+  private Referee referee;
 
   private FightEndType fightEndType;
-
   private byte numberOfRounds;
 
+  @Convert(DurationConvertor.class)
   private Duration stoppageTime;
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    Fight fight = (Fight) o;
+    return numberOfRounds == fight.numberOfRounds &&
+        Objects.equals(referee, fight.referee) &&
+        fightEndType == fight.fightEndType &&
+        Objects.equals(stoppageTime, fight.stoppageTime);
+  }
+
+  @Override
+  public String toString() {
+    return "Fight{" +
+        "id=" + id +
+        ", referee=" + referee +
+        ", fightEndType=" + fightEndType +
+        ", numberOfRounds=" + numberOfRounds +
+        ", stoppageTime=" + stoppageTime +
+        '}';
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(referee, fightEndType, numberOfRounds, stoppageTime);
+  }
 
   public long getId() {
     return id;
   }
 
-  public void setId(long id) {
+  public Fight setId(long id) {
     this.id = id;
-  }
-
-  public FoughtInFight getBlueFighter() {
-    return blueFighter;
-  }
-
-  public void setBlueFighter(FoughtInFight blueFighter) {
-    this.blueFighter = blueFighter;
-  }
-
-  public FoughtInFight getRedFighter() {
-    return redFighter;
-  }
-
-  public void setRedFighter(FoughtInFight redFighter) {
-    this.redFighter = redFighter;
+    return this;
   }
 
   public FightEndType getFightEndType() {
     return fightEndType;
   }
 
-  public void setFightEndType(FightEndType fightEndType) {
+  public Fight setFightEndType(FightEndType fightEndType) {
     this.fightEndType = fightEndType;
+    return this;
   }
 
   public byte getNumberOfRounds() {
     return numberOfRounds;
   }
 
-  public void setNumberOfRounds(byte numberOfRounds) {
+  public Fight setNumberOfRounds(byte numberOfRounds) {
     this.numberOfRounds = numberOfRounds;
+    return this;
   }
 
   public Duration getStoppageTime() {
     return stoppageTime;
   }
 
-  public void setStoppageTime(Duration stoppageTime) {
-    this.stoppageTime = stoppageTime;
+  public Long getStoppageTimeConverted() {
+    return Fight.convertDuration(getStoppageTime());
   }
 
-  public RefereedFight getReferee() {
+  public static Long convertDuration(final Duration duration) {
+    return INTERNAL_CONVERTER.toGraphProperty(duration);
+  }
+
+  public Fight setStoppageTime(Duration stoppageTime) {
+    this.stoppageTime = stoppageTime;
+    return this;
+  }
+
+  public Referee getReferee() {
     return referee;
   }
 
-  public void setReferee(RefereedFight referee) {
+  public Fight setReferee(Referee referee) {
     this.referee = referee;
+    return this;
   }
 }

@@ -1,5 +1,7 @@
 package org.deer.mma.stats.db.node.enumerated;
 
+import java.util.Optional;
+
 public enum FightEndType {
 
   DECISION_SPLIT,
@@ -10,29 +12,33 @@ public enum FightEndType {
   SUBMISSION,
   N_A;
 
-  public static FightEndType match(final String input) {
-    final String standardInput = input.trim().toLowerCase();
+  public static Optional<FightEndType> valueForName(final String name) {
+    final String standardInput = name.trim().toLowerCase();
 
     if (standardInput.contains("decision")) {
       if (standardInput.contains("unanimous")) {
-        return DECISION_UNANIMOUS;
+        return Optional.of(DECISION_UNANIMOUS);
       }
       if (standardInput.contains("major")) {
-        return DECISION_MAJORITY;
+        return Optional.of(DECISION_MAJORITY);
       }
-      return DECISION_SPLIT;
+      return Optional.of(DECISION_SPLIT);
     }
 
     if (standardInput.contains("ko")) {
       if (standardInput.contains("tko")) {
-        return TKO;
+        return Optional.of(TKO);
       }
-      return KO;
+      return Optional.of(KO);
     }
 
     if (standardInput.contains("sub")) {
-      return SUBMISSION;
+      return Optional.of(SUBMISSION);
     }
-    return N_A;
+
+    if (standardInput.contains("n/a")) {
+      return Optional.of(N_A);
+    }
+    return Optional.empty();
   }
 }

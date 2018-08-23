@@ -1,11 +1,10 @@
-package org.deer.mma.stats.reactor.parser;
+package org.deer.mma.stats.reactor.request;
 
 import static org.junit.Assert.assertTrue;
 
 import java.util.Optional;
 import org.apache.http.client.HttpClient;
 import org.deer.mma.stats.TestConfig;
-import org.deer.mma.stats.reactor.request.BasicHttpRequester;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

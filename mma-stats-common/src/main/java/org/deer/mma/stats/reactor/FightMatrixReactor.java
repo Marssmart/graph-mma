@@ -17,6 +17,7 @@ import javax.annotation.Nonnull;
 import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.reactor.request.HtmlPageRequester;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +42,46 @@ public class FightMatrixReactor implements LinkResolverReactor {
   @Autowired
   @Qualifier("basic")
   private HtmlPageRequester basicHttpRequester;
+
+  //TODO rewrite to jsoup
+  static Set<String> parseFightMatrixLinks(String content) {
+    return Splitter.on(HREF_FIGHTER_PROFILE_MASK)
+        .splitToList(content)
+        .stream()
+        .skip(1)
+        .map(s -> s.substring(0, s.indexOf("'")))
+        .map(s -> HREF_PROFILE_BASE + s)
+        .map(String::trim)
+        .collect(Collectors.toSet());
+  }
+
+  static Optional<String> parseSherdogLink(Document document) {
+    return Optional.of(document
+        .select("a:has(img)[target='_blank']")
+        .attr("href"))
+        .map(s -> s.isEmpty() ? null : s);
+  }
+
+  //http://www.fightmatrix.com/fighter-profile/Gegard+Mousasi/13436/
+  static Optional<String> parseFullName(String link) {
+    int hrefStart = link.indexOf(FIGHTER_PROFILE_LINK_BASE);
+
+    if (hrefStart == -1) {
+      LOG.warn("{} not found in link {}", link, FIGHTER_PROFILE_LINK_BASE);
+      return Optional.empty();
+    }
+
+    int slashAfterNameStart = link.indexOf('/', hrefStart + FIGHTER_PROFILE_LINK_BASE.length());
+
+    if (slashAfterNameStart == -1) {
+      LOG.warn("Slash not found in link {} after fighter name", link, FIGHTER_PROFILE_LINK_BASE);
+      return Optional.empty();
+    }
+
+    return Optional.of(
+        link.substring(hrefStart + FIGHTER_PROFILE_LINK_BASE.length(), slashAfterNameStart)
+            .replace("+", " "));
+  }
 
   @Override
   public CompletableFuture<DiscoverySession> extractFighterLinks(
@@ -97,13 +138,28 @@ public class FightMatrixReactor implements LinkResolverReactor {
             });
       }
 
-      final String sherdogLink = parseSherdogLink(contentFuture.join().orElse(""))
-          .orElse("N/A");
-
-      return new DiscoverySession(startingPointLink,
-          sherdogLink, discoveredLinksIndexPerFighterName,
+      return new DiscoverySession(startingPointLink, discoveredLinksIndexPerFighterName,
           this::decorateFighterByLink);
     });
+  }
+
+  @Override
+  public CompletableFuture<Map<String, String>> discoverAdditionalAttributes(@Nonnull String link) {
+    return basicHttpRequester.requestLink(link)
+        .thenApply(content -> {
+          if (content.isPresent()) {
+            final Map<String, String> attributes = new HashMap<>();
+            final Document document = Jsoup.parse(content.get());
+
+            parseSherdogLink(document)
+                .ifPresent(sherdogLink -> attributes.put(Fighter.PROP_SHERDOG_LINK, sherdogLink));
+
+            return attributes;
+          } else {
+            LOG.error("No content for link {}", link);
+            throw new IllegalStateException("No content for link " + link);
+          }
+        });
   }
 
   @Override
@@ -111,44 +167,17 @@ public class FightMatrixReactor implements LinkResolverReactor {
     return fighter.setFightMatrixLink(link);
   }
 
-  //TODO rewrite to jsoup
-  static Set<String> parseFightMatrixLinks(String content) {
-    return Splitter.on(HREF_FIGHTER_PROFILE_MASK)
-        .splitToList(content)
-        .stream()
-        .skip(1)
-        .map(s -> s.substring(0, s.indexOf("'")))
-        .map(s -> HREF_PROFILE_BASE + s)
-        .map(String::trim)
-        .collect(Collectors.toSet());
-  }
+  @Override
+  public Fighter decorateFighterByAdditionalAttributes(Fighter fighter,
+      Map<String, String> attributes) {
 
-  static Optional<String> parseSherdogLink(String content) {
-    return Optional.ofNullable(Jsoup.parse(content)
-        .select("a:has(img)[target='_blank']")
-        .attr("href"))
-        .map(s -> s.isEmpty() ? null : s);
-  }
+    final String sherdogLink = attributes.get(Fighter.PROP_SHERDOG_LINK);
 
-  //http://www.fightmatrix.com/fighter-profile/Gegard+Mousasi/13436/
-  static Optional<String> parseFullName(String link) {
-    int hrefStart = link.indexOf(FIGHTER_PROFILE_LINK_BASE);
-
-    if (hrefStart == -1) {
-      LOG.warn("{} not found in link {}", link, FIGHTER_PROFILE_LINK_BASE);
-      return Optional.empty();
+    if (sherdogLink != null && fighter.getSherdogLink() == null) {
+      fighter.setSherdogLink(sherdogLink);
     }
 
-    int slashAfterNameStart = link.indexOf('/', hrefStart + FIGHTER_PROFILE_LINK_BASE.length());
-
-    if (slashAfterNameStart == -1) {
-      LOG.warn("Slash not found in link {} after fighter name", link, FIGHTER_PROFILE_LINK_BASE);
-      return Optional.empty();
-    }
-
-    return Optional.of(
-        link.substring(hrefStart + FIGHTER_PROFILE_LINK_BASE.length(), slashAfterNameStart)
-            .replace("+", " "));
+    return fighter;
   }
 
   private CompletableFuture<Set<String>> collectLinksWithinPage(

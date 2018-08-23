@@ -3,7 +3,6 @@ package org.deer.mma.stats.rest;
 import static java.util.stream.Collectors.toMap;
 import static org.springframework.web.bind.annotation.RequestMethod.POST;
 
-import com.google.common.collect.Streams;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -26,10 +25,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/reactor")
-public class ReactorRest {
+public class FightMatrixReactorRest {
 
-  private static final Logger LOG = LoggerFactory.getLogger(ReactorRest.class);
+  private static final Logger LOG = LoggerFactory.getLogger(FightMatrixReactorRest.class);
   private final AtomicBoolean scrapingLock = new AtomicBoolean(false);
+  private final AtomicBoolean discoveryLock = new AtomicBoolean(false);
 
   @Autowired
   @Qualifier("fight-matrix-reactor")
@@ -65,7 +65,7 @@ public class ReactorRest {
           /*
            * 1) Create index of already existing fighters, to identify if new fighter should be created
            * */
-          final Map<String, Fighter> existingFighterIndex = Streams.stream(fighterRepo.findAll())
+          final Map<String, Fighter> existingFighterIndex = fighterRepo.findAllAsStream()
               .collect(toMap(Fighter::getFullname, fighter -> fighter));
           LOG.info("{} existing fighters indexed", existingFighterIndex.size());
 
@@ -123,8 +123,54 @@ public class ReactorRest {
     return ResponseEntity.ok("Scraping triggered");
   }
 
+  @RequestMapping(value = "/trigger-sherdog-link-discovery")
+  public ResponseEntity<String> triggerSherdogLinkDiscovery() {
+    if (discoveryLock.get()) {
+      return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Discovery already running !");
+    }
+
+    discoveryLock.set(true);
+
+    final CompletableFuture[] discoveriesInProgress = fighterRepo.findAllAsStream()
+        .map(fighter -> {
+          final String fightMatrixLink = fighter.getFightMatrixLink();
+
+          return fightMatrixReactor.discoverAdditionalAttributes(fightMatrixLink)
+              .whenComplete((attributes, throwable) -> {
+                if (throwable != null) {
+                  LOG.error("Discovery for link {} failed", fightMatrixLink, throwable);
+                } else {
+                  final Fighter decoratedFighter = fightMatrixReactor
+                      .decorateFighterByAdditionalAttributes(fighter, attributes);
+
+                  fighterRepo.save(decoratedFighter);
+                  LOG.info("Fighter {} decorated by Fight Matrix discovery attributes",
+                      fighter.getFullname());
+                }
+              });
+        }).toArray(CompletableFuture[]::new);
+
+    CompletableFuture.allOf(discoveriesInProgress).whenComplete((aVoid, throwable) -> {
+      if (throwable != null) {
+        LOG.error("Discoveries finished with error[total={}]", discoveriesInProgress.length,
+            throwable);
+      } else {
+        LOG.error("Discoveries finished [total={}]", discoveriesInProgress.length);
+      }
+
+      discoveryLock.set(false);
+    });
+
+    return ResponseEntity.ok("Discovery triggered");
+  }
+
   @RequestMapping("/check-scraping-running")
   public boolean checkScrapingRunning() {
     return scrapingLock.get();
+  }
+
+  @RequestMapping("/check-discovery-running")
+  public boolean checkDiscoveryRunning() {
+    return discoveryLock.get();
   }
 }

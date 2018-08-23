@@ -9,13 +9,14 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Set;
+import org.jsoup.Jsoup;
 import org.junit.Test;
 
 public class FightMatrixReactorPlainTest {
 
   @Test
   public void parseFighterLinks() throws IOException {
-    URL resource = Resources.getResource("fight-matrix-example-payload.html");
+    URL resource = Resources.getResource("fight-matrix/fight-matrix-example-payload.html");
     String content = Resources.toString(resource, StandardCharsets.UTF_8);
 
     Set<String> set = FightMatrixReactor.parseFightMatrixLinks(content);
@@ -30,10 +31,10 @@ public class FightMatrixReactorPlainTest {
 
   @Test
   public void parseSherdogLink() throws IOException {
-    URL resource = Resources.getResource("fight-matrix-example-payload.html");
+    URL resource = Resources.getResource("fight-matrix/fight-matrix-example-payload.html");
     String content = Resources.toString(resource, StandardCharsets.UTF_8);
 
-    Optional<String> sherdogLink = FightMatrixReactor.parseSherdogLink(content);
+    Optional<String> sherdogLink = FightMatrixReactor.parseSherdogLink(Jsoup.parse(content));
     assertTrue(sherdogLink.isPresent());
     assertEquals("http://www.sherdog.com/fighter/Gegard-Mousasi-7466", sherdogLink.get());
   }

@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import java.util.Arrays;
 import java.util.Set;
 import org.deer.mma.stats.db.node.Fighter;
-import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

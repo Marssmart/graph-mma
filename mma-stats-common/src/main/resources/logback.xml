@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+  <property name="LOG_PATH" value="logs"/>
+
+  <appender class="ch.qos.logback.core.ConsoleAppender" name="STDOUT">
+    <layout class="ch.qos.logback.classic.PatternLayout">
+      <Pattern>
+        %d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n
+      </Pattern>
+    </layout>
+  </appender>
+
+  <!--<logger name="" level="debug"-->
+  <!--additivity="false">-->
+  <!--<appender-ref ref="STDOUT" />-->
+  <!--</logger>-->
+
+  <root level="INFO">
+    <appender-ref ref="STDOUT"/>
+  </root>
+
+  <logger name="org.springframework" level="debug">
+  </logger>
+
+  <logger name="org.deer" level="debug">
+  </logger>
+
+  <logger name="com.gargoylersoftware" level="off">
+  </logger>
+</configuration>

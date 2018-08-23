@@ -1,6 +1,5 @@
 package org.deer.mma.stats;
 
-import org.deer.mma.stats.db.DbConfig;
 import org.deer.mma.stats.reactor.FightMatrixReactor;
 import org.deer.mma.stats.reactor.ReactorConfig;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +15,7 @@ import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
     "org.deer.mma.stats.db.repository",
     "org.deer.mma.stats.reactor.request"
 })
-@Import(value = { ReactorConfig.class})
+@Import(value = {ReactorConfig.class})
 public class TestConfig {
 
   @Bean
