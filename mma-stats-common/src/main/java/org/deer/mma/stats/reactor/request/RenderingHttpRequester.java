@@ -47,7 +47,7 @@ public class RenderingHttpRequester implements HtmlPageRequester {
         return Optional.ofNullable(page.asXml());
       } catch (IOException e) {
         LOG.error("Error while requesting link {}", link, e);
-        throw new IllegalStateException(e);
+        return Optional.empty();
       }
     });
   }
