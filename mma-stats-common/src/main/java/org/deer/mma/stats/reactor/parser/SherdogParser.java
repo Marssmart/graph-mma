@@ -10,12 +10,19 @@ public class SherdogParser {
 
   private final List<SherdogFightRecord> fightRecords;
   private final String fighterName;
+  private final String weightClass;
 
   public SherdogParser(final Document document) {
     fighterName = document.select("div.module.bio_fighter.vcard")
         .select("h1")
         .select("span.fn")
         .text();
+
+    weightClass = Strings.emptyToNull(
+        document.select("h6.item.wclass")
+            .text()
+            .replace("Class:", "")
+            .trim());
 
     fightRecords = document.select("div.module.fight_history")
         .select("div.content.table")
@@ -58,6 +65,10 @@ public class SherdogParser {
 
   public List<SherdogFightRecord> getFightRecords() {
     return fightRecords;
+  }
+
+  public Optional<String> getWeightClass() {
+    return Optional.ofNullable(weightClass);
   }
 
   public String getFighterName() {

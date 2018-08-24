@@ -28,6 +28,7 @@ public class SherdogParserTest {
     assertFalse(fightRecords.isEmpty());
     assertEquals(24, fightRecords.size());
     assertEquals("Robert Whittaker", parser.getFighterName());
+    assertEquals("Middleweight", parser.getWeightClass().get());
 
     fightRecords.forEach(record -> {
       final Optional<FightEnd> fightEnd = FightEnd.valueForName(record.getFightEnd().orElse(null));
