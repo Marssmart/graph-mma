@@ -57,6 +57,16 @@ public class Fighter {
     return Objects.hash(wins, losses, draws, nc, fullname, fightMatrixLink, sherdogLink);
   }
 
+  @Override
+  public String toString() {
+    return "Fighter{" +
+            "id=" + id +
+            ", fullname='" + fullname + '\'' +
+            ", fightMatrixLink='" + fightMatrixLink + '\'' +
+            ", sherdogLink='" + sherdogLink + '\'' +
+            '}';
+  }
+
   public Long getId() {
     return id;
   }

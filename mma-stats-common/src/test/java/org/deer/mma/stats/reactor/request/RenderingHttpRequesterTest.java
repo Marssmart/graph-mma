@@ -12,7 +12,6 @@ import org.jsoup.nodes.Document;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.annotation.Repeat;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
@@ -23,7 +22,6 @@ public class RenderingHttpRequesterTest {
   @Autowired
   private RenderingHttpRequester requester;
 
-  @Repeat(4)
   @Test
   public void requestLink() {
     final Optional<String> pageContent = requester

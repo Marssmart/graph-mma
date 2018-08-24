@@ -78,6 +78,9 @@ public class SherdogDiscoveryService {
     final Map<String, Fighter> fightersIndex = fighterRepo.findAllAsStream()
         .collect(Collectors.toMap(Fighter::getFullname, f -> f));
 
+    //it's to complicated to match existing files,so rather recreate them
+    fightRepo.deleteAll();
+
     final Long total = fighterRepo.countBySherdogLinkIsNotNull();
 
     IntStream.range(0, (int) (total + (total % 10 == 0 ? 0 : 1)))
@@ -102,7 +105,7 @@ public class SherdogDiscoveryService {
                           refereeIndex, record);
 
                       final Optional<Fight> fight = createOrMergeFight(fightersIndex,
-                          parser, record, fightReferee);
+                          refereeIndex, parser, record, fightReferee);
 
                       final Optional<Event> event = createOrMergeEvent(eventsIndex,
                           record, fight);
@@ -279,7 +282,8 @@ public class SherdogDiscoveryService {
     return Optional.empty();
   }
 
-  private Optional<Fight> createOrMergeFight(Map<String, Fighter> fightersIndex,
+  private Optional<Fight> createOrMergeFight(final Map<String, Fighter> fightersIndex,
+      final Map<String, Referee> refereeIndex,
       SherdogParser parser,
       SherdogFightRecord record, Optional<Referee> fightReferee) {
     final Optional<String> fightEnd = record.getFightEnd();
@@ -300,20 +304,22 @@ public class SherdogDiscoveryService {
 
       final Optional<FightEndType> fightEndType = FightEndType
           .valueForName(record.getFightEndType().orElse(FightEndType.N_A.name()));
-      final Fight fight = fightRepo.matchByFighterAndStopageTimeAndRound(
-          fightersIndex.get(parser.getFighterName()).getId(),
-          fightEndType.orElse(null),
-          stopageRound.orElse(null),
-          stopageTime.map(Fight::convertDuration).orElse(null))
-          .orElse(new Fight());
 
-      record.getFightEndType().ifPresent(FightEndType::valueForName);
-      fightReferee.ifPresent(fight::setReferee);
-      stopageRound.ifPresent(fight::setNumberOfRounds);
-      stopageTime.ifPresent(fight::setStoppageTime);
-      fightEndType.ifPresent(fight::setFightEndType);
+      if (record.getOpponentName().isPresent() && record.getReferee().isPresent()) {
+        final Fight fight = new Fight();
 
-      return Optional.of(fightRepo.save(fight));
+        fightReferee.ifPresent(fight::setReferee);
+        stopageRound.ifPresent(fight::setNumberOfRounds);
+        stopageTime.ifPresent(fight::setStoppageTime);
+        fightEndType.ifPresent(fight::setFightEndType);
+
+        return Optional.of(fightRepo.save(fight));
+      } else {
+        LOG.warn(
+            "Incomplete data detected, unable to create fight[opponent present{},referee present{}]",
+            record.getOpponentName().isPresent(), record.getReferee().isPresent());
+        return Optional.empty();
+      }
     }
     return Optional.empty();
   }

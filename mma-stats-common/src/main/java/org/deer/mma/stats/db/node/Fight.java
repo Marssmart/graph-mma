@@ -26,7 +26,7 @@ public class Fight {
   private Referee referee;
 
   private FightEndType fightEndType;
-  private byte numberOfRounds;
+  private Byte numberOfRounds;
 
   @Convert(DurationConvertor.class)
   private Duration stoppageTime;
@@ -80,11 +80,11 @@ public class Fight {
     return this;
   }
 
-  public byte getNumberOfRounds() {
+  public Byte getNumberOfRounds() {
     return numberOfRounds;
   }
 
-  public Fight setNumberOfRounds(byte numberOfRounds) {
+  public Fight setNumberOfRounds(Byte numberOfRounds) {
     this.numberOfRounds = numberOfRounds;
     return this;
   }

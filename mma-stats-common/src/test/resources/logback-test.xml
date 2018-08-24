@@ -18,4 +18,19 @@
     <appender-ref ref="STDOUT"/>
   </root>
 
+  <logger level="info" name="org.springframework">
+  </logger>
+
+  <logger level="debug" name="org.deer">
+  </logger>
+
+  <logger level="error" name="org.neo4j">
+  </logger>
+
+  <logger level="error" name="com.gargoylesoftware">
+  </logger>
+
+  <logger level="off" name="com.gargoylesoftware.htmlunit.javascript">
+  </logger>
+
 </configuration>
