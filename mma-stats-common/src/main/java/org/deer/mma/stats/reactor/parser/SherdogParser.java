@@ -1,8 +1,10 @@
 package org.deer.mma.stats.reactor.parser;
 
 import com.google.common.base.Strings;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.jsoup.nodes.Document;
 
@@ -11,6 +13,7 @@ public class SherdogParser {
   private final List<SherdogFightRecord> fightRecords;
   private final String fighterName;
   private final String weightClass;
+  private final Set<String> teams;
 
   public SherdogParser(final Document document) {
     fighterName = document.select("div.module.bio_fighter.vcard")
@@ -18,11 +21,18 @@ public class SherdogParser {
         .select("span.fn")
         .text();
 
-    weightClass = Strings.emptyToNull(
-        document.select("h6.item.wclass")
-            .text()
-            .replace("Class:", "")
-            .trim());
+    weightClass = Strings.emptyToNull(document.select("h6.item.wclass")
+        .text()
+        .replace("Class:", "")
+        .trim());
+
+    teams = Arrays.stream(document.select("h5.item.association")
+        .text()
+        .replace("Association:", "")
+        .trim()
+        .split("/"))
+        .map(String::trim)
+        .collect(Collectors.toSet());
 
     fightRecords = document.select("div.module.fight_history")
         .select("div.content.table")
@@ -69,6 +79,10 @@ public class SherdogParser {
 
   public Optional<String> getWeightClass() {
     return Optional.ofNullable(weightClass);
+  }
+
+  public Set<String> getTeams() {
+    return teams;
   }
 
   public String getFighterName() {

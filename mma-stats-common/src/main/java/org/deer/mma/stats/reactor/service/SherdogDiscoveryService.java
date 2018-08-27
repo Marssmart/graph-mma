@@ -26,12 +26,17 @@ import org.deer.mma.stats.db.node.Event;
 import org.deer.mma.stats.db.node.Fight;
 import org.deer.mma.stats.db.node.Fighter;
 import org.deer.mma.stats.db.node.Referee;
+import org.deer.mma.stats.db.node.Team;
+import org.deer.mma.stats.db.node.WeightClass;
 import org.deer.mma.stats.db.node.enumerated.FightEnd;
 import org.deer.mma.stats.db.node.enumerated.FightEndType;
+import org.deer.mma.stats.db.node.projections.CountFightsByFighter;
 import org.deer.mma.stats.db.repository.EventRepo;
 import org.deer.mma.stats.db.repository.FightRepo;
 import org.deer.mma.stats.db.repository.FighterRepo;
 import org.deer.mma.stats.db.repository.RefereeRepo;
+import org.deer.mma.stats.db.repository.TeamRepo;
+import org.deer.mma.stats.db.repository.WeightClassRepo;
 import org.deer.mma.stats.reactor.parser.SherdogParser;
 import org.deer.mma.stats.reactor.parser.SherdogParser.SherdogFightRecord;
 import org.deer.mma.stats.reactor.request.HtmlPageRequester;
@@ -68,6 +73,12 @@ public class SherdogDiscoveryService {
   @Autowired
   private FightRepo fightRepo;
 
+  @Autowired
+  private TeamRepo teamRepo;
+
+  @Autowired
+  private WeightClassRepo weightClassRepo;
+
   public void triggerSherdogDiscovery() {
     final Map<String, Event> eventsIndex = eventRepo.findAllAsStream()
         .collect(Collectors.toMap(Event::getName, o -> o));
@@ -78,10 +89,11 @@ public class SherdogDiscoveryService {
     final Map<String, Fighter> fightersIndex = fighterRepo.findAllAsStream()
         .collect(Collectors.toMap(Fighter::getFullname, f -> f));
 
-    //it's to complicated to match existing files,so rather recreate them
-    fightRepo.deleteAll();
-
     final Long total = fighterRepo.countBySherdogLinkIsNotNull();
+
+    final Map<Long, Long> fighterIdToFightsIndex = fightRepo.countAllByParticipant().stream()
+        .collect(Collectors.toMap(CountFightsByFighter::getFighterId,
+            CountFightsByFighter::getCountOfFights));
 
     IntStream.range(0, (int) (total + (total % 10 == 0 ? 0 : 1)))
         .mapToObj(i -> PageRequest.of(i, 10))
@@ -90,22 +102,49 @@ public class SherdogDiscoveryService {
           LOG.info("Requesting page {}", pageRequest);
           requestWebPagesForDbPage(pageRequest)
               .forEach(document -> {
-                LOG.info("Processing document {}", document.title());
+                LOG.trace("Processing document {}", document.title());
                 final SherdogParser parser = new SherdogParser(document);
-                LOG.info("Document {} parsed", document.title());
+                LOG.trace("Document {} parsed", document.title());
                 final String fighterName = parser.getFighterName();
                 if (!fightersIndex.containsKey(fighterName)) {
                   LOG.error("Fighter name not present in document {}!!!", document.title());
                   return;
                 }
-                LOG.info("Processing document {}", document.title());
+
+                Fighter fighter = fightersIndex.get(parser.getFighterName());
+
+                parser.getTeams().forEach(teamName -> teamRepo.save(
+                    teamRepo.findByName(teamName).orElse(new Team())
+                        .setName(teamName)
+                        .addMember(fighter)));
+
+                parser.getWeightClass()
+                    .map(weightClassRepo::findByName)
+                    .map(optWeightClass -> optWeightClass.orElse(new WeightClass()))
+                    .map(weightClass -> weightClass.setName(parser.getWeightClass().get()))
+                    .map(weightClass -> weightClass.addMember(fighter))
+                    .ifPresent(weightClassRepo::save);
+
+                // if we have all fights, skip processing
+                if (Optional.ofNullable(fighter)
+                    .map(Fighter::getId)
+                    .map(fighterIdToFightsIndex::get)
+                    .map(countOfFights -> parser.getFightRecords().size() == countOfFights)
+                    .orElse(false)) {
+
+                  LOG.info("No new record found for fighter {},skipping processing",
+                      parser.getFighterName());
+                  return;
+                }
+
+                LOG.trace("Processing document {}", document.title());
                 parser.getFightRecords()
                     .forEach(record -> {
                       final Optional<Referee> fightReferee = createOrMergeReferee(
                           refereeIndex, record);
 
                       final Optional<Fight> fight = createOrMergeFight(fightersIndex,
-                          refereeIndex, parser, record, fightReferee);
+                          parser, record, fightReferee, record.getEventDate());
 
                       final Optional<Event> event = createOrMergeEvent(eventsIndex,
                           record, fight);
@@ -119,8 +158,6 @@ public class SherdogDiscoveryService {
                         final Fighter opponent = fightersIndex
                             .getOrDefault(opponentName.get(), new Fighter())
                             .setFullname(opponentName.get());
-
-                        final Fighter fighter = fightersIndex.get(fighterName);
 
                         record.getOpponentLink().map(link -> SHERDOG_COM + link)
                             .ifPresent(opponent::setSherdogLink);
@@ -220,15 +257,15 @@ public class SherdogDiscoveryService {
           LOG.info("Requesting sherdog for fighter {},link {}", fullname, sherdogLink);
           return htmlPageRequester.requestLink(sherdogLink)
               .thenApply(content -> {
-                LOG.info("Sherdog content for fighter {} received", fullname);
+                LOG.trace("Sherdog content for fighter {} received", fullname);
                 return Jsoup.parse(content.orElse("N/A"));
               }).whenComplete((aVoid, throwable) -> {
                 if (throwable != null) {
                   error.incrementAndGet();
-                  LOG.trace("Error while requesting {}", sherdogLink, throwable);
+                  LOG.error("Error while requesting {}", sherdogLink, throwable);
                 } else {
                   success.incrementAndGet();
-                  LOG.info("Data discovery for fighter {} finished", fullname);
+                  LOG.trace("Data discovery for fighter {} finished", fullname);
                 }
               });
         }).collect(Collectors.toList());
@@ -282,10 +319,11 @@ public class SherdogDiscoveryService {
     return Optional.empty();
   }
 
-  private Optional<Fight> createOrMergeFight(final Map<String, Fighter> fightersIndex,
-      final Map<String, Referee> refereeIndex,
+  private Optional<Fight> createOrMergeFight(Map<String, Fighter> fightersIndex,
       SherdogParser parser,
-      SherdogFightRecord record, Optional<Referee> fightReferee) {
+      SherdogFightRecord record,
+      Optional<Referee> fightReferee,
+      Optional<String> eventDate) {
     final Optional<String> fightEnd = record.getFightEnd();
     if (fightEnd.isPresent()) {
       final Optional<Byte> stopageRound = record.getStopageRound()
@@ -306,7 +344,16 @@ public class SherdogDiscoveryService {
           .valueForName(record.getFightEndType().orElse(FightEndType.N_A.name()));
 
       if (record.getOpponentName().isPresent() && record.getReferee().isPresent()) {
-        final Fight fight = new Fight();
+        final Fighter fighter = fightersIndex.get(parser.getFighterName());
+        final Fighter opponent = fightersIndex.get(record.getOpponentName().orElse(null));
+
+        Fight fight;
+        if (fighter != null && opponent != null) {
+          fight = fightRepo.matchFight(fighter.getId(), opponent.getId(), eventDate.orElse(null))
+              .orElse(new Fight());
+        } else {
+          fight = new Fight();
+        }
 
         fightReferee.ifPresent(fight::setReferee);
         stopageRound.ifPresent(fight::setNumberOfRounds);

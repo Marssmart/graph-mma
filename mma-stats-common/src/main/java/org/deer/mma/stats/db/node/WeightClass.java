@@ -2,6 +2,7 @@ package org.deer.mma.stats.db.node;
 
 import static org.neo4j.ogm.annotation.Relationship.INCOMING;
 
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import org.neo4j.ogm.annotation.GeneratedValue;
@@ -19,7 +20,12 @@ public class WeightClass {
   private String name;
 
   @Relationship(type = "FIGHTS_AT", direction = INCOMING)
-  private Set<Fighter> fighters;
+  private Set<Fighter> fighters = new HashSet<>();
+
+  public WeightClass addMember(final Fighter fighter) {
+    this.fighters.add(fighter);
+    return this;
+  }
 
   @Override
   public boolean equals(Object o) {
@@ -58,8 +64,9 @@ public class WeightClass {
     return name;
   }
 
-  public void setName(String name) {
+  public WeightClass setName(String name) {
     this.name = name;
+    return this;
   }
 
   public Set<Fighter> getFighters() {
