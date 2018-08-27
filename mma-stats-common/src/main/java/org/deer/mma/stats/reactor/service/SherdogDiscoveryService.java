@@ -282,6 +282,20 @@ public class SherdogDiscoveryService {
     return documentFutures.stream().map(CompletableFuture::join).collect(Collectors.toList());
   }
 
+  private static Optional<LocalDate> parseDate(SherdogFightRecord record) {
+    return record.getEventDate()
+        .map(date -> date.replace(" ", ""))
+        .map(date -> {
+          try {
+            return EVENT_DATE_FORMATTER.parse(date);
+          } catch (DateTimeParseException e) {
+            LOG.warn("Error parsing {} as date", date);
+            return null;
+          }
+        })
+        .map(LocalDate::from);
+  }
+
   private Optional<Event> createOrMergeEvent(Map<String, Event> eventsIndex,
       SherdogFightRecord record,
       Optional<Fight> fight) {
@@ -295,18 +309,7 @@ public class SherdogDiscoveryService {
           .map(link -> SHERDOG_COM + link)
           .ifPresent(event::setSherdogLink);
 
-      record.getEventDate()
-          .map(date -> date.replace(" ", ""))
-          .map(date -> {
-            try {
-              return EVENT_DATE_FORMATTER.parse(date);
-            } catch (DateTimeParseException e) {
-              LOG.warn("Error parsing {} as date", date);
-              return null;
-            }
-          })
-          .map(LocalDate::from)
-          .ifPresent(event::setDate);
+      parseDate(record).ifPresent(event::setDate);
 
       fight.map(currentFight -> ImmutableSet.<Fight>builder()
           .addAll(Optional.ofNullable(event.getFights()).orElse(Collections.emptySet()))
@@ -349,7 +352,8 @@ public class SherdogDiscoveryService {
 
         Fight fight;
         if (fighter != null && opponent != null) {
-          fight = fightRepo.matchFight(fighter.getId(), opponent.getId(), eventDate.orElse(null))
+          final String eventDateString = parseDate(record).map(LocalDate::toString).orElse(null);
+          fight = fightRepo.matchFight(fighter.getId(), opponent.getId(), eventDateString)
               .orElse(new Fight());
         } else {
           fight = new Fight();
@@ -363,7 +367,7 @@ public class SherdogDiscoveryService {
         return Optional.of(fightRepo.save(fight));
       } else {
         LOG.warn(
-            "Incomplete data detected, unable to create fight[opponent present{},referee present{}]",
+            "Incomplete data detected, unable to create fight[opponent present {},referee present {}]",
             record.getOpponentName().isPresent(), record.getReferee().isPresent());
         return Optional.empty();
       }

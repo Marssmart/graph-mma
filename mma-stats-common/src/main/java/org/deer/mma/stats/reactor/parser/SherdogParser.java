@@ -32,6 +32,7 @@ public class SherdogParser {
         .trim()
         .split("/"))
         .map(String::trim)
+        .filter(s -> !s.isEmpty())
         .collect(Collectors.toSet());
 
     fightRecords = document.select("div.module.fight_history")

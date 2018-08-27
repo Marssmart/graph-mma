@@ -21,6 +21,7 @@
     <guava.version>26.0-jre</guava.version>
     <jsoup.version>1.10.2</jsoup.version>
     <htmlunit.version>2.24</htmlunit.version>
+    <spring-boot-test.version>2.0.4.RELEASE</spring-boot-test.version>
   </properties>
 
   <dependencyManagement>
@@ -99,6 +100,12 @@
             <artifactId>slf4j-nop</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-test</artifactId>
+        <version>${spring-boot-test.version}</version>
+        <scope>test</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>

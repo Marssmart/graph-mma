@@ -22,7 +22,7 @@ public interface FightRepo extends Neo4jRepository<Fight, Long> {
       + " (f)-[r3]->(e:Event)"
       + " WHERE id(a)= {fighterOne}"
       + " AND id(b)= {fighterTwo}"
-      + " AND e.date = {date}"
+      + " AND (e.date = {date} OR e.date IS NULL)"
       + " RETURN f")
   Optional<Fight> matchFight(@Param("fighterOne") Long fighterOne,
       @Param("fighterTwo") Long fighterTwo,
